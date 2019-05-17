@@ -11,15 +11,18 @@ Compilation
 ------------
 This is painful.  My apologies.
 
+### Install Npcap
 First step is to install [Npcap](https://nmap.org/npcap/).  It might also work
 with [WinPcap](https://www.winpcap.org/).  YMMV.  It's tested with installing
 Npcap in WinPcap compatible mode and without loopback support.  The Npcap SDK
 is also needed.  Grab it and extract it somewhere.
 
+### Install the Compiler
 [TDM-GCC](http://tdm-gcc.tdragon.net/download) is the compiler assumed for the
 rest of these instructions.  Microsoft's compiler will probably work as well
 but it's not been tested.
 
+### Convert Libraries and Build
 Before actually compiling it's necessary to convert two libraries from Windows
 DLLs to gcc/mingw-friendly archives (`.a` files).  Something like the following
 should do the trick.
@@ -41,6 +44,13 @@ dir edrsniper.exe
 ```
 
 Good luck.
+
+### Compile-Time Options
+The STEALTH macro can be set at compile time (i.e. `-DSTEALTH`) to redirect
+output to `NUL`.  In the future it will also hide the terminal window.
+
+Also in the future there'll be `-DINTERFACE` to select the interface on which
+to capture.
 
 Usage
 -----
