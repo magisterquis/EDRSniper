@@ -1,0 +1,4 @@
+Validate TCP
+Add -DSTEALTH to hide window and turn off printf/fprintf
+Select interface with -DINTERFACE
+Check if we're running as admin
