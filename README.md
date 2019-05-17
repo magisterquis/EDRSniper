@@ -97,7 +97,7 @@ Error 317
 Unfortunately, the [value](https://docs.microsoft.com/en-us/windows/desktop/api/iphlpapi/nf-iphlpapi-settcpentry#return-value)
 returned by `SetTcpEntry` isn't reliable.  Specifically, `317` is returned both
 if `edrsniper` isn't running with the right permission and if the TCP
-connection to be dropped doesn't exist.  The end result is that there's now way
+connection to be dropped doesn't exist.  The end result is that there's no way
 to know what went wrong.
 
-Windows :/
+Windows `:/`
