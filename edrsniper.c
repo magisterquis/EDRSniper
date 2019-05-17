@@ -239,9 +239,7 @@ print_error(DWORD ret, PMIB_TCPROW row)
                                         "Unpossible.\n");
                         exit(11);
                 case 317:
-                        fprintf(stderr, "Application must be run elevated "
-                                        "to drop %s\n", buf);
-                        /* exit(12); */
+                        fprintf(stderr, "Error 317 dropping %s", buf);
                         return;
                 default:
                         /* Do YOU want to figure out https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-formatmessage ? */
@@ -250,10 +248,3 @@ print_error(DWORD ret, PMIB_TCPROW row)
                         return;
         }
 }
-/*
- * gcc -O2 -Wall -I c:\users\ieuser\desktop\npcap-sdk-1.01\include --pedantic -std=c11 -o c:\Users\IEUser\Desktop\rstedr.exe z:\rstedr.c -lIphlpapi -lws2_32 -lwpcap 
- *
- *
- * REM -Lc:\users\ieuser\desktop\lib
- * REM rstedr.exe tcp port 80
- */
