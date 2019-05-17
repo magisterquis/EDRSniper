@@ -10,6 +10,7 @@
 #include <winsock.h>
 #include <windows.h>
 #include <Iphlpapi.h>
+#include <io.h>
 #include <pcap/pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,12 +34,36 @@ main(int argc, char **argv)
 {
         char *dev, *filt;
         char errbuf[PCAP_ERRBUF_SIZE+1];
-        int i, len;
+        int i, len, fd;
         pcap_t *p;
         struct bpf_program prog;
         bpf_u_int32 net, mask;
         int l2hlen, dltype;
         pcap_if_t *dl, *d;
+
+        /* Stealth mode.  Write to NULL and close the window */
+#ifdef STEALTH
+        /* Close stdin/out/err and remap fds < 3 to NUL */
+        for (fd = 0; fd < 3; ++fd) {
+                if (0 != (ret = _close(fd))) {
+                        perror("_close");
+                        return 12;
+                }
+        }
+        if (0 != _sopen_s(&fd, "NUL", _O_WRONLY, _SH_DENYNO,
+                                _S_IREAD | _S_IWRITE)) {
+                perror("_sopen_s");
+                return 14;
+        }
+        for (i = 0; i < 3; ++i) {
+                if (0 != _dup2(fd, i)) {
+                        perror("_dup2");
+                        return 15;
+                }
+        }
+
+        /* TODO: Close the console window */
+#endif /* #ifdef STEALTH */
 
         memset(errbuf, 0, sizeof(errbuf));
 
