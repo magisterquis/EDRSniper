@@ -152,8 +152,15 @@ handler(u_char *usr, const struct pcap_pkthdr *hdr, const u_char *pkt)
 
         /* Make sure we're at an IPv4 header */
         if (0x40 != (*pkt & 0xF0)) {
-                fprintf(stderr, "Packet not IPv4.  Considering adding \"and "
-                                "ip\" to the filter.\n");
+                fprintf(stderr, "Non-IPv4 packet found.  Considering adding "
+                                "\"and ip\" to the filter.\n");
+                return;
+        }
+        /* Make sure we've got TCP next */
+        if (0x06 != *(pkt + 9)) {
+                fprintf(stderr, "Non-TCP packet (protocol %u) found.  "
+                                "Consider adding \"and tcp\" to the filter.\n",
+                                *(pkt + 9));
                 return;
         }
         /* IP header length */
@@ -239,7 +246,7 @@ print_error(DWORD ret, PMIB_TCPROW row)
                                         "Unpossible.\n");
                         exit(11);
                 case 317:
-                        fprintf(stderr, "Error 317 dropping %s", buf);
+                        fprintf(stderr, "Error 317 dropping %s\n", buf);
                         return;
                 default:
                         /* Do YOU want to figure out https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-formatmessage ? */
