@@ -74,17 +74,18 @@ At the moment, the capture interface is the first one found which isn't a
 loopabck interface and isn't an NdisWan Adapter.  In future versions this will
 be configurable.
 
-Error 317
----------
-Unfortunately, the [return value](https://docs.microsoft.com/en-us/windows/desktop/api/iphlpapi/nf-iphlpapi-settcpentry#return-value)
-isn't reliable.  Specifically, `317` is returned both if `edrsniper` isn't
-running with the right permission and if the TCP connection to be dropped
-doesn't exist.  The end result is that there's now way to know what went wrong.
-
-Windows :/
-
 How It Works
 ------------
 Under the hood, edrsniper watches for packets which match a filter and when it
 finds one, extracts the source and destination IP/port pair which it then
 passes to [`SetTcpEntry`](https://docs.microsoft.com/en-us/windows/desktop/api/iphlpapi/nf-iphlpapi-settcpentry).
+
+Error 317
+---------
+Unfortunately, the [value](https://docs.microsoft.com/en-us/windows/desktop/api/iphlpapi/nf-iphlpapi-settcpentry#return-value)
+returned by `SetTcpEntry` isn't reliable.  Specifically, `317` is returned both
+if `edrsniper` isn't running with the right permission and if the TCP
+connection to be dropped doesn't exist.  The end result is that there's now way
+to know what went wrong.
+
+Windows :/
