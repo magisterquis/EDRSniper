@@ -3,6 +3,8 @@ EDR Sniper
 Give it a BPF filter and it'll drop TCP connections when it sees packets from
 the connection matching a BPF filter.  This is meant to kill EDR comms.
 
+At the moment only TCP over IPv4 is supported.
+
 For legal use only.
 
 Compilation
