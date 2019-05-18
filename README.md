@@ -52,11 +52,12 @@ output to `NUL`.  In the future it will also hide the terminal window.
 Also in the future there'll be `-DINTERFACE` to select the interface on which
 to capture.
 
-Usage
------
-At the moment the only user-configurable parameter is the BPF filter used to
-select which TCP streams to kill.  It's generally a good idea to filter on
-SYN packets to cut down on error output.
+Filter
+------
+Any TCP stream with a packet matching a BPF filter will be dropped.  The filter
+can either be specified on the command-line at runtime or as a preprocessor
+macro (i.e. `-DFILTER=<filter>`) at compile time.  It's generally a good idea
+to filter on SYN packets to cut down on error output.
 
 ```batch
 edrsniper.exe "tcp port 80 and tcp[tcpflags] & tcp-syn != 0 and tcp[tcpflags] & tcp-ack == 0"
@@ -76,6 +77,7 @@ edrsniper.exe tcp
 
 Of course, all of the above need to be run elevated (e.g. with `runas`).
 
+The
 In the future, the BPF filter and ethernet device will be settable at compile
 time and there will be a `STEALTH` macro which will disable output, hide the
 window, and so on.

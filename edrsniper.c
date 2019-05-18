@@ -34,12 +34,15 @@ main(int argc, char **argv)
 {
         char *dev, *filt;
         char errbuf[PCAP_ERRBUF_SIZE+1];
-        int i, len, fd;
+        int i, fd;
         pcap_t *p;
         struct bpf_program prog;
         bpf_u_int32 net, mask;
         int l2hlen, dltype;
         pcap_if_t *dl, *d;
+#ifndef FILTER
+        int len;
+#endif
 
         /* Stealth mode.  Write to NULL and close the window */
 #ifdef STEALTH
@@ -91,6 +94,9 @@ main(int argc, char **argv)
         printf("Will capture on %s (%s)\n", dev, d->description);
 
         /* Work out capture filter */
+#ifdef FILTER
+        filt = FILTER;
+#else /* #ifdef FILTER */
         len = 0;
         argc--;
         argv++;
@@ -110,6 +116,7 @@ main(int argc, char **argv)
                         (void)strncat(filt, " ", len - 1 - strlen(filt));
                 (void)strncat(filt, argv[i], len - 1 - strlen(filt));
         }
+#endif /* #ifdef FILTER */
         if (0 != pcap_lookupnet(dev, &net, &mask, errbuf)) {
                 fprintf(stderr, "pcap_loookupnet: %s\n", errbuf);
                 return 6;
@@ -124,7 +131,9 @@ main(int argc, char **argv)
         }
         pcap_freecode(&prog);
         printf("Capture filter: %s\n", filt);
+#ifndef FILTER
         free(filt); filt = NULL;
+#endif /* #ifndef FILTER */
 
         /* Work out how big the layer-2 header is */
         switch (dltype = pcap_datalink(p)) {
