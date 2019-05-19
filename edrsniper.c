@@ -311,7 +311,9 @@ print_error(DWORD ret, PMIB_TCPROW row)
                                         "Unpossible.\n");
                         exit(11);
                 case 317:
+#ifndef NO317
                         fprintf(stderr, "Error 317 dropping %s\n", buf);
+#endif /* #ifndef NO317 */
                         return;
                 default:
                         /* Do YOU want to figure out https://docs.microsoft.com/en-us/windows/desktop/api/winbase/nf-winbase-formatmessage ? */

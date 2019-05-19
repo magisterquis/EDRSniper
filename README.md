@@ -37,6 +37,7 @@ Macro                          | Description
 `STEALTH`                     `| Redirect output to `NUL`.  In the future it will also hide the terminal window.
 [`IFCIDR`](#capture-interface) | CIDR range to select capture interface
 [`FILTER`](#filter)            | BPF filter to select TCP streams to drop
+[`NO317`](#error-317)          | Disable 317-related error messages
 
 This is meant to make it easier to bake-in configuration for shoving the binary
 into memory, running non-interactively, and so on.
@@ -86,6 +87,7 @@ Unfortunately, the [value](https://docs.microsoft.com/en-us/windows/desktop/api/
 returned by `SetTcpEntry` isn't reliable.  Specifically, `317` is returned both
 if `edrsniper` isn't running with the right permission and if the TCP
 connection to be dropped doesn't exist.  The end result is that there's no way
-to know what went wrong.
+to know what went wrong.  The "Error 317 dropping..." messages can be disabled
+by defining the `NO317` macro at compile-time.
 
 Windows `:/`
