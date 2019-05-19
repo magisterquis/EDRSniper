@@ -17,7 +17,7 @@ del packet.dll
 del wpcap.def
 del packet.def
 gcc -O2 -Wall -Inpcap-sdk-1.03\include -L. --pedantic -std=c11 -o edrsniper.exe edrsniper.c -lIphlpapi -lws2_32 -lwpcap -static
-gcc -DSTEALTH -DIFCIDR="192.168.0.0/16" -DFILTER="tcp port 80 and tcp[tcpflags] & tcp-syn != 0 and tcp[tcpflags] & tcp-ack == 0" -O2 -Wall -Inpcap-sdk-1.03\include -L. --pedantic -std=c11 -o edrsniper.baked.exe edrsniper.c -lIphlpapi -lws2_32 -lwpcap -static
+gcc -DSTEALTH -DIFCIDR="192.168.0.0/16" -DFILTER="tcp port 80 and tcp[tcpflags] & tcp-syn != 0 and tcp[tcpflags] & tcp-ack == 0" -DNO317 -O2 -Wall -Inpcap-sdk-1.03\include -L. --pedantic -std=c11 -o edrsniper.baked.exe edrsniper.c -lIphlpapi -lws2_32 -lwpcap -static
 del libwpcap.a
 del libpacket.a
 dir edrsniper*.exe
