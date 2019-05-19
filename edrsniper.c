@@ -67,6 +67,9 @@ main(int argc, char **argv)
 
         /* Stealth mode.  Write to NULL and close the window */
 #ifdef STEALTH
+        /* Close the console window */
+        ShowWindow(GetConsoleWindow(), SW_HIDE);
+
         /* Close stdin/out/err and remap fds < 3 to NUL */
         for (fd = 0; fd < 3; ++fd) {
                 if (0 != _close(fd)) {
@@ -85,8 +88,6 @@ main(int argc, char **argv)
                         return 15;
                 }
         }
-
-        /* TODO: Close the console window */
 #endif /* #ifdef STEALTH */
 
         /* Work out the CIDR range for the interface, if we've got one */

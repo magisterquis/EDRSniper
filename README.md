@@ -34,7 +34,7 @@ The following macros can be set at compile time:
 
 Macro                          | Description
 -------------------------------|------------
-`STEALTH`                      | Redirect output to `NUL`.  In the future it will also hide the terminal window.
+`STEALTH`                      | Redirect output to `NUL`and hide the terminal window.
 [`IFCIDR`](#capture-interface) | CIDR range to select capture interface
 [`FILTER`](#filter)            | BPF filter to select TCP streams to drop
 [`NO317`](#error-317)          | Disable 317-related error messages
