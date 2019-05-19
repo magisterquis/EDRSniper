@@ -24,33 +24,22 @@ but it's not been tested.
 
 ### Convert Libraries and Build
 Before actually compiling it's necessary to convert two libraries from Windows
-DLLs to gcc/mingw-friendly archives (`.a` files).  Something like the following
-should do the trick.
-
-```batch
-mkdir lib
-copy c:\windows\system32\wpcap.dll .
-copy c:\windows\system32\packet.dll .
-gendef.exe wpcap.dll
-gendef.exe packet.dll
-dlltool.exe -d wpcap.def -D wpcap.dll -l lib\wptap.a
-dlltool.exe -d packet.def -D packet.dll -l lib\packet.a
-del wpcap.dll
-del packet.dll
-del wpcap.def
-del packet.def
-gcc -O2 -Wall -I npcap-sdk-1.02\include -L lib --pedantic -std=c11 -o edrsniper.exe z:\edrsniper.c -lIphlpapi -lws2_32 -lpcap -static
-dir edrsniper.exe
-```
+DLLs to gcc/mingw-friendly archives (`.a` files).  Something like the contents
+of [`build.bat`](./build.bat) should do the trick.
 
 Good luck.
 
 ### Compile-Time Options
-The STEALTH macro can be set at compile time (i.e. `-DSTEALTH`) to redirect
-output to `NUL`.  In the future it will also hide the terminal window.
+The following macros can be set at compile time:
 
-Also in the future there'll be `-DINTERFACE` to select the interface on which
-to capture.
+Macro                          | Description
+-------------------------------|------------
+`STEALTH`                     `| Redirect output to `NUL`.  In the future it will also hide the terminal window.
+[`IFCIDR`](#capture-interface) | CIDR range to select capture interface
+[`FILTER`](#filter)            | BPF filter to select TCP streams to drop
+
+This is meant to make it easier to bake-in configuration for shoving the binary
+into memory, running non-interactively, and so on.
 
 Filter
 ------
@@ -77,16 +66,13 @@ edrsniper.exe tcp
 
 Of course, all of the above need to be run elevated (e.g. with `runas`).
 
-The
-In the future, the BPF filter and ethernet device will be settable at compile
-time and there will be a `STEALTH` macro which will disable output, hide the
-window, and so on.
-
 Capture Interface
 -----------------
-At the moment, the capture interface is the first one found which isn't a
-loopabck interface and isn't an NdisWan Adapter.  In future versions this will
-be configurable.
+The interface on which to capture can be determined in two ways.  By default,
+the first non-loopback, non-NdisWan adapter is used.  Alternatively, the
+compile-time macro `IFCIDR` can be set to a CIDR range (e.g. `10.0.0.0/8`)
+to select the first interface with an address in the given range.  A specific
+address may be selected by using a netmask of `32`, e.g. `192.168.88.1/32`.
 
 How It Works
 ------------

@@ -3,19 +3,29 @@
  * Windows program to drop TCP connections which match a BPF filter
  * By J. Stuart McMurray
  * Created 20190512
- * Last Modified 20190516
+ * Last Modified 20190518
  */
+
+#include <sys/stat.h>
 
 #include <winsock2.h>
 #include <winsock.h>
 #include <windows.h>
 #include <Iphlpapi.h>
+#include <Share.h>
+
+#include <fcntl.h>
 #include <io.h>
 #include <pcap/pcap.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
+
+/* Because Windows... */
+#define STRINGIZE(x) #x
+#define STRINGIZE_VALUE_OF(x) STRINGIZE(x)
+/* Above from https://stackoverflow.com/questions/2410976/how-to-define-a-string-literal-in-gcc-command-line/7955490 */
 
 /* SNAPLEN is how much data to capture.  120 bytes should be plenty to extract
  * IPs and ports. */
@@ -28,27 +38,38 @@
 void handler(u_char *usr, const struct pcap_pkthdr *hdr, const u_char *pkt);
 void rowstr(PMIB_TCPROW row, char *buf);
 void print_error(DWORD ret, PMIB_TCPROW row);
+int  has_address_in_cidr(const struct pcap_addr *pa, uint32_t mask, uint32_t net);
+void parse_cidr(const char *s, uint32_t *mask, uint32_t *net);
 
 int
 main(int argc, char **argv)
 {
         char *dev, *filt;
         char errbuf[PCAP_ERRBUF_SIZE+1];
-        int i, fd;
         pcap_t *p;
         struct bpf_program prog;
         bpf_u_int32 net, mask;
         int l2hlen, dltype;
         pcap_if_t *dl, *d;
+#ifdef STEALTH
+        int fd, fdi;
+#endif /* #ifdef STEALTH */
 #ifndef FILTER
-        int len;
+        int len, ai;
 #endif
+        /* mask and net hold a CIDR range if we're choosing our adapter by
+         * CIDR. */
+#ifdef IFCIDR
+        uint32_t cmask;
+        uint32_t cnet;
+#endif /* #ifdef IFCIDR */
+
 
         /* Stealth mode.  Write to NULL and close the window */
 #ifdef STEALTH
         /* Close stdin/out/err and remap fds < 3 to NUL */
         for (fd = 0; fd < 3; ++fd) {
-                if (0 != (ret = _close(fd))) {
+                if (0 != _close(fd)) {
                         perror("_close");
                         return 12;
                 }
@@ -58,8 +79,8 @@ main(int argc, char **argv)
                 perror("_sopen_s");
                 return 14;
         }
-        for (i = 0; i < 3; ++i) {
-                if (0 != _dup2(fd, i)) {
+        for (fdi = 0; fdi < 3; ++fdi) {
+                if (0 != _dup2(fd, fdi)) {
                         perror("_dup2");
                         return 15;
                 }
@@ -68,22 +89,31 @@ main(int argc, char **argv)
         /* TODO: Close the console window */
 #endif /* #ifdef STEALTH */
 
+        /* Work out the CIDR range for the interface, if we've got one */
+#ifdef IFCIDR
+        parse_cidr(STRINGIZE_VALUE_OF(IFCIDR), &cmask, &cnet);
+#endif /* #ifdef IFCIDR */
+
         memset(errbuf, 0, sizeof(errbuf));
 
-        /* Set up pcap on the first non-loopback interface. */
+        /* Set up pcap on the first suitable interface. */
         if (0 != pcap_findalldevs(&dl, errbuf)) {
                 fprintf(stderr, "Unable to get capture devices: %s\n", errbuf);
                 return 0;
         }
         for (d = dl; NULL != d; d = d->next) {
+#ifdef IFCIDR
+                if (!has_address_in_cidr(d->addresses, cmask, cnet))
+#else /* #ifdef IFCIDR */
                 if (PCAP_IF_LOOPBACK & d->flags || NULL != strstr(
                                         d->description, "NdisWan Adapter"))
+#endif
                         continue;
 
                 break;
         }
         if (NULL == d) {
-                fprintf(stderr, "No non-loopback device found\n");
+                fprintf(stderr, "No suitable device found\n");
                 return 13;
         }
         dev = d->name;
@@ -91,19 +121,19 @@ main(int argc, char **argv)
                 fprintf(stderr, "pcap_open_live: %s\n", errbuf);
                 return 4;
         }
-        printf("Will capture on %s (%s)\n", dev, d->description);
+        printf("Capture device: %s (%s)\n", dev, d->description);
 
         /* Work out capture filter */
 #ifdef FILTER
-        filt = FILTER;
+        filt = STRINGIZE_VALUE_OF(FILTER);
 #else /* #ifdef FILTER */
         len = 0;
         argc--;
         argv++;
-        for (i = 0; i < argc; ++i)
-                len += strlen(argv[i]) + 1;
+        for (ai = 0; ai < argc; ++ai)
+                len += strlen(argv[ai]) + 1;
         if (0 >= len || 0 == argc) {
-                fprintf(stderr, "Usage: %s filter\n", argv[0]);
+                fprintf(stderr, "Please supply a BPF filter\n");
                 return 2;
         }
         if (NULL == (filt = malloc(len))) {
@@ -111,10 +141,10 @@ main(int argc, char **argv)
                 return 3;
         }
         memset(filt, 0, len);
-        for (i = 0; i < argc; ++i) {
-                if (0 != i)
+        for (ai = 0; ai < argc; ++ai) {
+                if (0 != ai)
                         (void)strncat(filt, " ", len - 1 - strlen(filt));
-                (void)strncat(filt, argv[i], len - 1 - strlen(filt));
+                (void)strncat(filt, argv[ai], len - 1 - strlen(filt));
         }
 #endif /* #ifdef FILTER */
         if (0 != pcap_lookupnet(dev, &net, &mask, errbuf)) {
@@ -123,6 +153,7 @@ main(int argc, char **argv)
         }
         if (0 != pcap_compile(p, &prog, filt, 1, mask)) {
                 fprintf(stderr, "pcap_compile: %s\n", pcap_geterr(p));
+                fprintf(stderr, "Filter: %s\n", filt);
                 return 7;
         }
         if (0 != pcap_setfilter(p, &prog)) {
@@ -150,7 +181,7 @@ main(int argc, char **argv)
                                         pcap_datalink_val_to_description(dltype));
                         return 9;
         }
-        printf("Datalink type: %s (%s)\n",
+        printf("Datalink type:  %s (%s)\n",
                         pcap_datalink_val_to_name(dltype),
                         pcap_datalink_val_to_description(dltype));
 
@@ -289,3 +320,76 @@ print_error(DWORD ret, PMIB_TCPROW row)
                         return;
         }
 }
+
+/* has_address_in_cidr returns nonzero if any of the addressess in the linked
+ * list pa are in the CIDR range described by mask and net.  Only AF_INET
+ * addresses will be considered. */
+int
+has_address_in_cidr(const struct pcap_addr *pa, uint32_t mask, uint32_t net)
+{
+        struct sockaddr_in *sin;
+        /* Walk the list until we find a matching address or run out of
+         * addresses. */
+        for (; NULL != pa; pa = pa->next) {
+                /* Make sure we've got an IPv4 address */
+                if (AF_INET != pa->addr->sa_family)
+                        continue;
+                sin = (struct sockaddr_in *)(pa->addr);
+                /* If the address matches, we're good. */
+                if (net == (mask & sin->sin_addr.s_addr))
+                        return 1;
+        }
+
+        /* If we made it here, none of the addresses match. */
+        return 0;
+}
+
+#ifdef IFCIDR
+/* parse_cidr parses the cidr range s which should be in address/bits notation
+ * and places the masked network portion in net and the mask in mask.  The
+ * program is terminated if s doesn't contain a valid CIDR range. */
+void
+parse_cidr(const char *s, uint32_t *mask, uint32_t *net)
+{
+        char a[21]; /* Should be long enough */
+        char *ms, *end;
+        unsigned long b;
+
+        /* Copy s if it's short enough */
+        memset(a, 0, sizeof(a));
+        if (sizeof(a) - 1 < strlen(s)) {
+                fprintf(stderr, "Interface cidr too long\n");
+                exit(18);
+        }
+        strncpy(a, s, sizeof(a)-1);
+
+        /* Find the start of the mask */
+        if (NULL == (ms = strstr(a, "/"))) {
+                fprintf(stderr, "CIDR range missing a /\n");
+                exit(16);
+        }
+        *ms = '\0';
+        ms++;
+
+        /* Get the IPv4 address */
+        if (INADDR_NONE == (*net = inet_addr(a))) {
+                fprintf(stderr, "Invalid IPv4 address %s\n", s);
+                exit(17);
+        }
+
+        /* Work out the netmask */
+        b = strtoul(ms, &end, 0);
+        if ('\0' == ms[0] || '\0' != *end) {
+                fprintf(stderr, "Invalid mask %s\n", ms);
+                exit(19);
+        }
+        if (32 < b) {
+                fprintf(stderr, "Netmask of %lu bits too large\n", b);
+                exit(20);
+        }
+        *mask = htonl(0xFFFFFFFF - ((1 << (32-b)) - 1));
+
+        /* Turn the address into just the network number */
+        *net &= *mask;
+}
+#endif /* #ifdef IFCIDR */
