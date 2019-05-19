@@ -4,7 +4,7 @@ REM build.bat
 REM Builds edrsniper
 REM By J. Stuart McMurray
 REM Created 20190518
-REM Last Modified 20190518
+REM Last Modified 20190519
 
 copy c:\windows\system32\wpcap.dll .
 copy c:\windows\system32\packet.dll .
