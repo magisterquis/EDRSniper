@@ -3,7 +3,7 @@
  * Windows program to drop TCP connections which match a BPF filter
  * By J. Stuart McMurray
  * Created 20190512
- * Last Modified 20190519
+ * Last Modified 20190520
  */
 
 #include <sys/stat.h>
@@ -67,7 +67,7 @@ main(int argc, char **argv)
 
         /* Stealth mode.  Write to NULL and close the window */
 #ifdef STEALTH
-        /* Close the console window. Thanks to Matt Neely of SimSpace. */
+        /* Close the console window. Thanks to Matt Neeley of SimSpace. */
         ShowWindow(GetConsoleWindow(), SW_HIDE);
 
         /* Close stdin/out/err and remap fds < 3 to NUL */
@@ -351,7 +351,7 @@ has_address_in_cidr(const struct pcap_addr *pa, uint32_t mask, uint32_t net)
 /* parse_cidr parses the cidr range s which should be in address/bits notation
  * and places the masked network portion in net and the mask in mask.  The
  * program is terminated if s doesn't contain a valid CIDR range.  Thanks to
- * Matt Neely of SimSpace for bringing it up.*/
+ * Matt Neeley of SimSpace for bringing it up.*/
 void
 parse_cidr(const char *s, uint32_t *mask, uint32_t *net)
 {
